@@ -1,12 +1,29 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { getSupabaseBrowser } from '@/lib/supabase-browser'
 import type { Bounty, BountyFrequency, Faction, MarketItem, CombatLogEntry } from '@/types'
 import { FREQUENCY_ICON, FREQUENCY_LABEL } from '@/lib/bounties'
 import { DAY_NAMES, DAY_LABELS } from '@/lib/market'
 import { US_TIMEZONES } from '@/lib/timezone'
+
+/** Flash a status message that auto-clears after `ms` milliseconds.
+ *  Cancels the previous timer so rapid calls never leave stale timers running. */
+function useFlash(ms = 3500): [string | null, (text: string) => void] {
+  const [msg, setMsg] = useState<string | null>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const flash = useCallback((text: string) => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    setMsg(text)
+    timerRef.current = setTimeout(() => setMsg(null), ms)
+  }, [ms])
+
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current) }, [])
+
+  return [msg, flash]
+}
 
 type Tab = 'chores' | 'market' | 'chronicles' | 'war'
 
@@ -29,7 +46,7 @@ function ChoresTab({
 }) {
   const supabase = getSupabaseBrowser()
   const [bounties, setBounties] = useState<Bounty[]>(initialBounties)
-  const [msg, setMsg] = useState<string | null>(null)
+  const [msg, flash] = useFlash(3500)
   const [loading, setLoading] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Partial<Bounty>>({})
@@ -44,11 +61,6 @@ function ChoresTab({
     power: 10,
     guild_double_gold: false,
   })
-
-  function flash(text: string) {
-    setMsg(text)
-    setTimeout(() => setMsg(null), 3500)
-  }
 
   async function refresh() {
     const { data } = await supabase
@@ -467,7 +479,7 @@ const VENUE_LABELS: Record<MarketItem['venue'], string> = {
 
 function MarketTab({ initialItems }: { initialItems: MarketItem[] }) {
   const [items, setItems] = useState<MarketItem[]>(initialItems)
-  const [msg, setMsg] = useState<string | null>(null)
+  const [msg, flash] = useFlash(3500)
   const [loading, setLoading] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Partial<MarketItem>>({})
@@ -490,11 +502,6 @@ function MarketTab({ initialItems }: { initialItems: MarketItem[] }) {
     refreshItems()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  function flash(text: string) {
-    setMsg(text)
-    setTimeout(() => setMsg(null), 3500)
-  }
 
   async function refreshItems() {
     const res = await fetch('/api/admin/market-items')
@@ -977,16 +984,11 @@ function ChroniclesTab({
   factions: Faction[]
 }) {
   const [log, setLog] = useState<CombatLogEntry[]>(initialLog)
-  const [msg, setMsg] = useState<string | null>(null)
+  const [msg, flash] = useFlash(4000)
   const [revoking, setRevoking] = useState<string | null>(null)
 
   function factionName(id: string | null) {
     return factions.find((f) => f.id === id)?.display_name ?? '?'
-  }
-
-  function flash(text: string) {
-    setMsg(text)
-    setTimeout(() => setMsg(null), 4000)
   }
 
   async function revokeEntry(entry: CombatLogEntry) {
@@ -1097,13 +1099,8 @@ function ChroniclesTab({
 
 function WarTab({ factions, initialTimezone }: { factions: Faction[]; initialTimezone: string }) {
   const [loading, setLoading] = useState(false)
-  const [msg, setMsg] = useState<string | null>(null)
+  const [msg, flash] = useFlash(5000)
   const [timezone, setTimezone] = useState(initialTimezone)
-
-  function flash(text: string) {
-    setMsg(text)
-    setTimeout(() => setMsg(null), 5000)
-  }
 
   async function saveTimezone(tz: string) {
     setTimezone(tz)

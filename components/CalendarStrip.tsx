@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { format, parseISO, isToday, isTomorrow, differenceInCalendarDays } from 'date-fns'
 import type { CalendarEvent } from '@/types'
@@ -49,20 +49,23 @@ export function CalendarStrip({ initialEvents }: Props) {
     return () => clearInterval(tick)
   }, [])
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     setRefreshing(true)
     try {
       const res = await fetch('/api/calendar', { cache: 'no-store' })
       const data = await res.json()
       if (data.events) setEvents(data.events)
-    } catch {}
-    setRefreshing(false)
-  }
+    } catch {
+      // silent
+    } finally {
+      setRefreshing(false)
+    }
+  }, [])
 
   useEffect(() => {
     const interval = setInterval(refresh, 5 * 60_000)
     return () => clearInterval(interval)
-  }, [])
+  }, [refresh])
 
   return (
     <div className="flex items-center gap-0 h-full w-full overflow-hidden">

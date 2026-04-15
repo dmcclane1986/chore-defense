@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { getSupabaseBrowser } from '@/lib/supabase-browser'
 import type {
@@ -57,6 +57,15 @@ export function Dashboard({
 
   const [damagedFaction, setDamagedFaction] = useState<string | null>(null)
   const [healedFaction, setHealedFaction] = useState<string | null>(null)
+  const damageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const healTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (damageTimerRef.current) clearTimeout(damageTimerRef.current)
+      if (healTimerRef.current) clearTimeout(healTimerRef.current)
+    }
+  }, [])
   const [localBounties, setLocalBounties] = useState<Bounty[]>(initialBounties)
   const [localMembers, setLocalMembers] = useState<FamilyMember[]>(members)
   const [showMarkets, setShowMarkets] = useState(false)
@@ -92,10 +101,12 @@ export function Dashboard({
     if (!myFaction || !oppFaction) return
     if (action === 'attack') {
       setDamagedFaction(oppFaction.id)
-      setTimeout(() => setDamagedFaction(null), 600)
+      if (damageTimerRef.current) clearTimeout(damageTimerRef.current)
+      damageTimerRef.current = setTimeout(() => setDamagedFaction(null), 600)
     } else {
       setHealedFaction(myFaction.id)
-      setTimeout(() => setHealedFaction(null), 1200)
+      if (healTimerRef.current) clearTimeout(healTimerRef.current)
+      healTimerRef.current = setTimeout(() => setHealedFaction(null), 1200)
     }
     setLocalBounties((prev) => prev.filter((b) => !b.is_completed))
     // Re-fetch all member stats so gold/xp badges update immediately
