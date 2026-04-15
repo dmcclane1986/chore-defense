@@ -1,26 +1,88 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@layer base {
+  @font-face {
+    font-family: 'MedievalSharp';
+    src: local('Cinzel'), local('Palatino Linotype'), local('Book Antiqua'), local('serif');
+  }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  html, body {
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  * {
+    box-sizing: border-box;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  .font-medieval {
+    font-family: 'Cinzel', 'Palatino Linotype', 'Book Antiqua', 'Georgia', serif;
+    letter-spacing: 0.03em;
+  }
+
+  .bg-parchment {
+    background: linear-gradient(160deg, #f5e6c8 0%, #e8d0a0 60%, #dfc090 100%);
+  }
+
+  .bg-wood {
+    background-color: #3d2a18;
+    background-image:
+      repeating-linear-gradient(
+        92deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      ),
+      repeating-linear-gradient(
+        180deg,
+        transparent,
+        transparent 40px,
+        rgba(255,255,255,0.02) 40px,
+        rgba(255,255,255,0.02) 42px
+      );
+  }
+
+  .bg-dark-stone {
+    background-color: #1a1208;
+    background-image: radial-gradient(ellipse at 20% 20%, rgba(60,40,20,0.3) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(40,25,10,0.3) 0%, transparent 60%);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-thumb-stone-600::-webkit-scrollbar-thumb {
+    background: #57534e;
+    border-radius: 2px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .panel {
+    @apply rounded-xl border border-stone-700/60 bg-stone-900/70 backdrop-blur-sm p-4;
+  }
+
+  .input {
+    @apply bg-stone-800 border border-stone-600 rounded px-3 py-2 text-stone-200 text-sm focus:outline-none focus:border-amber-500;
+  }
+
+  .label {
+    @apply text-xs text-stone-400 block mb-1;
+  }
+
+  .btn-primary {
+    @apply px-5 py-2 bg-amber-700 hover:bg-amber-600 disabled:opacity-40 text-white rounded-lg font-bold text-sm transition-colors touch-manipulation;
+  }
+
+  .btn-ghost {
+    @apply px-5 py-2 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded-lg font-bold text-sm transition-colors touch-manipulation;
+  }
 }
