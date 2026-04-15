@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Allow googleapis to be used in server components
-  serverExternalPackages: ['googleapis'],
+  // Keep the calendar client out of the Next.js bundle (server-only)
+  serverExternalPackages: ['@googleapis/calendar', 'google-auth-library'],
 
   /** Nested `app/api/menu/vote` is not registered next to `app/api/menu` in dev (Next 16 + Turbopack). */
   async rewrites() {

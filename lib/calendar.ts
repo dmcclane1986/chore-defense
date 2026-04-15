@@ -1,4 +1,4 @@
-import { google } from 'googleapis'
+import { auth as googleAuth, calendar } from '@googleapis/calendar'
 import type { CalendarEvent } from '@/types'
 
 function getCredentials() {
@@ -17,12 +17,12 @@ export async function getCalendarEvents(): Promise<CalendarEvent[]> {
   if (!credentials || !process.env.GOOGLE_CALENDAR_ID) return []
 
   try {
-    const auth = new google.auth.GoogleAuth({
+    const auth = new googleAuth.GoogleAuth({
       credentials,
       scopes: ['https://www.googleapis.com/auth/calendar.readonly'],
     })
 
-    const cal = google.calendar({ version: 'v3', auth })
+    const cal = calendar({ version: 'v3', auth })
     const now = new Date()
     const threeDaysAhead = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
 
