@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { getSupabaseBrowser } from '@/lib/supabase-browser'
 import type { Bounty, BountyFrequency, Faction, MarketItem, CombatLogEntry } from '@/types'
 import { FREQUENCY_ICON, FREQUENCY_LABEL } from '@/lib/bounties'
 import { DAY_NAMES, DAY_LABELS } from '@/lib/market'
@@ -25,6 +24,12 @@ function useFlash(ms = 3500): [string | null, (text: string) => void] {
   return [msg, flash]
 }
 
+function formatBountyApiError(raw: unknown): string {
+  if (!raw || typeof raw !== 'object') return 'Unknown error'
+  const o = raw as { error?: string; details?: string; hint?: string }
+  return [o.error, o.details, o.hint].filter(Boolean).join(' — ') || 'Unknown error'
+}
+
 type Tab = 'chores' | 'market' | 'chronicles' | 'war'
 
 type Props = {
@@ -44,7 +49,6 @@ function ChoresTab({
 }: {
   initialBounties: Bounty[]
 }) {
-  const supabase = getSupabaseBrowser()
   const [bounties, setBounties] = useState<Bounty[]>(initialBounties)
   const [msg, flash] = useFlash(3500)
   const [loading, setLoading] = useState(false)
@@ -63,21 +67,34 @@ function ChoresTab({
   })
 
   async function refresh() {
-    const { data } = await supabase
-      .from('bounties')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (data) setBounties(data as Bounty[])
+    const res = await fetch('/api/admin/bounties')
+    if (res.ok) {
+      const data = (await res.json()) as Bounty[]
+      setBounties(data)
+    } else {
+      const errBody = await res.json().catch(() => null)
+      flash(`Could not load chores: ${formatBountyApiError(errBody)}`)
+    }
   }
+
+  useEffect(() => {
+    void refresh()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function createBounty() {
     setLoading(true)
-    const { error } = await supabase.from('bounties').insert({
-      ...form,
-      is_completed: false,
+    const res = await fetch('/api/admin/bounties', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...form,
+        description: form.description.trim() === '' ? null : form.description,
+      }),
     })
-    if (error) {
-      flash(`Error: ${error.message}`)
+    const data = await res.json()
+    if (!res.ok || !(data as { ok?: boolean }).ok) {
+      flash(`Error: ${formatBountyApiError(data)}`)
     } else {
       flash('Bounty created!')
       await refresh()
@@ -111,9 +128,27 @@ function ChoresTab({
 
   async function saveEdit(id: string) {
     setLoading(true)
-    const { error } = await supabase.from('bounties').update(editForm).eq('id', id)
-    if (error) {
-      flash(`Error: ${error.message}`)
+    const res = await fetch('/api/admin/bounties', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        title: editForm.title,
+        description:
+          editForm.description === '' || editForm.description === undefined
+            ? null
+            : editForm.description,
+        frequency: editForm.frequency,
+        gold_reward: editForm.gold_reward,
+        xp_reward: editForm.xp_reward,
+        quest_type: editForm.quest_type,
+        power: editForm.power,
+        guild_double_gold: editForm.guild_double_gold,
+      }),
+    })
+    const data = await res.json()
+    if (!res.ok || !(data as { ok?: boolean }).ok) {
+      flash(`Error: ${formatBountyApiError(data)}`)
     } else {
       flash('Bounty updated!')
       setEditingId(null)
@@ -140,8 +175,19 @@ function ChoresTab({
   }
 
   async function deleteBounty(id: string) {
-    await supabase.from('bounties').delete().eq('id', id)
-    setBounties((prev) => prev.filter((b) => b.id !== id))
+    setLoading(true)
+    const res = await fetch('/api/admin/bounties', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    const data = await res.json()
+    if (!res.ok || !(data as { ok?: boolean }).ok) {
+      flash(`Error: ${formatBountyApiError(data)}`)
+    } else {
+      setBounties((prev) => prev.filter((b) => b.id !== id))
+    }
+    setLoading(false)
   }
 
   const active = bounties.filter((b) => !b.is_completed)
@@ -186,6 +232,7 @@ function ChoresTab({
               }
               className="input w-full"
             >
+              <option value="constant">📌 Constant (always on the board)</option>
               <option value="daily">☀️ Daily (always shown)</option>
               <option value="weekly">📅 Weekly (rotates weekly)</option>
               <option value="semi_weekly">🔄 Twice a Week (rotates every 3 days)</option>
@@ -401,6 +448,7 @@ function BountyEditRow({
             }
             className="input w-full"
           >
+            <option value="constant">📌 Constant</option>
             <option value="daily">☀️ Daily</option>
             <option value="weekly">📅 Weekly</option>
             <option value="semi_weekly">🔄 Twice a Week</option>

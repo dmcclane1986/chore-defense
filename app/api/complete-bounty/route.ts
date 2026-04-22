@@ -25,9 +25,12 @@ export async function POST(req: NextRequest) {
 
   if (!bountyRes.data) return NextResponse.json({ error: 'Bounty not found' }, { status: 404 })
   if (!memberRes.data) return NextResponse.json({ error: 'Family member not found' }, { status: 404 })
-  if (bountyRes.data.is_completed) return NextResponse.json({ error: 'Bounty already completed' }, { status: 409 })
 
   const bounty = bountyRes.data
+  const isConstant = bounty.frequency === 'constant'
+  if (!isConstant && bounty.is_completed) {
+    return NextResponse.json({ error: 'Bounty already completed' }, { status: 409 })
+  }
   const member = memberRes.data
   const factions = factionsRes.data ?? []
   const myFaction = factions.find((f) => f.slug === member.faction_slug)
@@ -75,8 +78,15 @@ export async function POST(req: NextRequest) {
     xp: member.xp + bounty.xp_reward,
   }).eq('id', familyMemberId)
 
-  // Mark bounty complete
-  await supabase.from('bounties').update({ is_completed: true }).eq('id', bountyId)
+  // Constant chores stay on the board; others are marked complete once.
+  if (isConstant) {
+    await supabase
+      .from('bounties')
+      .update({ is_completed: false, completed_by: null })
+      .eq('id', bountyId)
+  } else {
+    await supabase.from('bounties').update({ is_completed: true }).eq('id', bountyId)
+  }
 
   // Update game state
   await supabase.from('game_state')

@@ -32,7 +32,12 @@ export type Profile = {
   faction_contribution_xp: number
 }
 
-export type BountyFrequency = 'daily' | 'weekly' | 'semi_weekly' | 'bi_weekly'
+export type BountyFrequency =
+  | 'constant'
+  | 'daily'
+  | 'weekly'
+  | 'semi_weekly'
+  | 'bi_weekly'
 
 export type Bounty = {
   id: string

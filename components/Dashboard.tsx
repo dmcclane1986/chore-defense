@@ -114,7 +114,9 @@ export function Dashboard({
   }
 
   function handleBountyMarked(bountyId: string) {
-    setLocalBounties((prev) => prev.filter((b) => b.id !== bountyId))
+    setLocalBounties((prev) =>
+      prev.filter((b) => b.id !== bountyId || b.frequency === 'constant'),
+    )
   }
 
   if (!parents || !teens) {

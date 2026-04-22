@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+
+  output: 'standalone',
   // Keep the calendar client out of the Next.js bundle (server-only)
   serverExternalPackages: ['@googleapis/calendar', 'google-auth-library'],
 
@@ -23,3 +25,5 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+

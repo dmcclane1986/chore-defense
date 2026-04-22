@@ -477,48 +477,57 @@ function VoteRow({
   onVote: (menuItemId: string, dir: 'up' | 'down') => void
 }) {
   const btn =
-    'shrink-0 leading-none px-0.5 rounded text-[9px] text-stone-400 hover:text-amber-200 hover:bg-stone-700/70 disabled:opacity-25 disabled:pointer-events-none touch-manipulation'
-  return (
-    <div className="flex items-start gap-0.5 min-w-0 w-full">
-      <span className="flex-1 min-w-0 text-[9px] sm:text-[10px] text-stone-300 leading-tight break-words">
-        {label}
-      </span>
-      {showVotes && (
-        <span className="flex shrink-0 flex-col gap-0 leading-none">
-          {hasVoted ? (
-            <span
-              className="shrink-0 leading-none px-0.5 text-[9px] text-emerald-600/70"
-              title="Already voted"
-              aria-label="Already voted"
-            >
-              ✓
-            </span>
-          ) : (
-            <>
-              <button
-                type="button"
-                className={btn}
-                disabled={!canVote || busy}
-                title="Vote up"
-                aria-label="Vote up"
-                onClick={() => onVote(menuItemId, 'up')}
-              >
-                ▲
-              </button>
-              <button
-                type="button"
-                className={btn}
-                disabled={!canVote || busy}
-                title="Vote down"
-                aria-label="Vote down"
-                onClick={() => onVote(menuItemId, 'down')}
-              >
-                ▼
-              </button>
-            </>
-          )}
+    'shrink-0 self-stretch flex items-center justify-center w-5 min-h-[1.35rem] rounded text-xs text-stone-400 hover:text-amber-200 hover:bg-stone-700/70 disabled:opacity-25 disabled:pointer-events-none touch-manipulation leading-none'
+  const labelBase =
+    'flex-1 min-w-0 text-[11px] sm:text-xs text-stone-300 leading-snug break-words px-0.5'
+
+  if (!showVotes) {
+    return (
+      <div className="flex items-center min-w-0 w-full">
+        <span className={`${labelBase} text-left`}>{label}</span>
+      </div>
+    )
+  }
+
+  if (hasVoted) {
+    return (
+      <div className="flex items-center gap-0.5 min-w-0 w-full">
+        <span className="w-5 shrink-0" aria-hidden />
+        <span
+          className="flex-1 min-w-0 text-center text-xs text-emerald-600/80 leading-none py-0.5"
+          title="Already voted"
+          aria-label="Already voted"
+        >
+          ✓
         </span>
-      )}
+        <span className="w-5 shrink-0" aria-hidden />
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-0.5 min-w-0 w-full">
+      <button
+        type="button"
+        className={btn}
+        disabled={!canVote || busy}
+        title="Vote up"
+        aria-label="Vote up"
+        onClick={() => onVote(menuItemId, 'up')}
+      >
+        ▲
+      </button>
+      <span className={`${labelBase} text-center`}>{label}</span>
+      <button
+        type="button"
+        className={btn}
+        disabled={!canVote || busy}
+        title="Vote down"
+        aria-label="Vote down"
+        onClick={() => onVote(menuItemId, 'down')}
+      >
+        ▼
+      </button>
     </div>
   )
 }
@@ -562,13 +571,13 @@ function VoteRowsInCell({
     return (
       <div className="flex flex-col gap-0.5 flex-1 min-w-0 min-h-[2.5rem]">
         <div className={slotPillClass}>
-          <span className="block text-[7px] uppercase tracking-wide text-amber-600/80 leading-none mb-0.5">
+          <span className="block text-[8px] uppercase tracking-wide text-amber-600/80 leading-none mb-0.5">
             Lunch
           </span>
           <div className="flex flex-col gap-0.5">{renderRows(lunch)}</div>
         </div>
         <div className={slotPillClass}>
-          <span className="block text-[7px] uppercase tracking-wide text-emerald-600/80 leading-none mb-0.5">
+          <span className="block text-[8px] uppercase tracking-wide text-emerald-600/80 leading-none mb-0.5">
             Dinner
           </span>
           <div className="flex flex-col gap-0.5">{renderRows(dinner)}</div>
@@ -729,7 +738,7 @@ export function WeekMenuStrip({ initialMenu, initialFetchFailed }: Props) {
     <div className="w-full border-t border-stone-800 bg-stone-900/55 px-2 py-2 shrink-0">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 px-1">
         <div className="flex items-center gap-2">
-          <span className="text-emerald-500/90 text-xs font-medieval tracking-wider">🍲 Week menu</span>
+          <span className="text-emerald-500/90 text-sm font-medieval tracking-wider">🍲 Week menu</span>
           <button
             type="button"
             onClick={refresh}
@@ -741,7 +750,7 @@ export function WeekMenuStrip({ initialMenu, initialFetchFailed }: Props) {
           </button>
         </div>
         {hasVoteableRows && !isRealWarrior && (
-          <span className="text-[10px] text-stone-500 italic">Select a warrior to vote.</span>
+          <span className="text-xs text-stone-500 italic">Select a warrior to vote.</span>
         )}
       </div>
 
@@ -768,7 +777,7 @@ export function WeekMenuStrip({ initialMenu, initialFetchFailed }: Props) {
                 key={label}
                 className="min-w-0 flex flex-col rounded-md border border-stone-700/80 bg-stone-800/60 px-1.5 py-1.5"
               >
-                <span className="text-emerald-600/90 font-medieval font-bold text-[10px] uppercase tracking-wide border-b border-stone-700/50 pb-0.5 mb-1 shrink-0">
+                <span className="text-emerald-600/90 font-medieval font-bold text-xs uppercase tracking-wide border-b border-stone-700/50 pb-0.5 mb-1 shrink-0">
                   {label}
                 </span>
                 {voteRows.length > 0 ? (
@@ -783,25 +792,25 @@ export function WeekMenuStrip({ initialMenu, initialFetchFailed }: Props) {
                 ) : cell.split && cell.lunch && cell.dinner ? (
                   <div className="flex flex-col gap-0.5 flex-1 min-w-0 min-h-[2.5rem]">
                     <div className={slotPillClass} title={cell.lunch}>
-                      <span className="block text-[7px] uppercase tracking-wide text-amber-600/80 leading-none mb-0.5">
+                      <span className="block text-[8px] uppercase tracking-wide text-amber-600/80 leading-none mb-0.5">
                         Lunch
                       </span>
-                      <span className="block text-[9px] sm:text-[10px] text-stone-300 leading-tight break-words line-clamp-3">
+                      <span className="block text-[11px] sm:text-xs text-stone-300 leading-snug break-words line-clamp-3">
                         {cell.lunch}
                       </span>
                     </div>
                     <div className={slotPillClass} title={cell.dinner}>
-                      <span className="block text-[7px] uppercase tracking-wide text-emerald-600/80 leading-none mb-0.5">
+                      <span className="block text-[8px] uppercase tracking-wide text-emerald-600/80 leading-none mb-0.5">
                         Dinner
                       </span>
-                      <span className="block text-[9px] sm:text-[10px] text-stone-300 leading-tight break-words line-clamp-3">
+                      <span className="block text-[11px] sm:text-xs text-stone-300 leading-snug break-words line-clamp-3">
                         {cell.dinner}
                       </span>
                     </div>
                   </div>
                 ) : (
                   <p
-                    className="text-[10px] sm:text-[11px] text-stone-300 leading-snug break-words flex-1 min-h-[2rem]"
+                    className="text-[11px] sm:text-xs text-stone-300 leading-snug break-words flex-1 min-h-[2rem]"
                     title={cell.single ?? undefined}
                   >
                     {cell.single ?? '—'}

@@ -23,7 +23,11 @@ export default async function Home() {
   ] = await Promise.all([
     supabase.from('factions').select('*').order('slug'),
     supabase.from('family_members').select('*').order('name'),
-    supabase.from('bounties').select('*').eq('is_completed', false).order('created_at'),
+    supabase
+      .from('bounties')
+      .select('*')
+      .or('is_completed.eq.false,frequency.eq.constant')
+      .order('created_at'),
     supabase.from('combat_log').select('*').order('created_at', { ascending: false }).limit(20),
     supabase.from('market_catalog').select('*').order('price_gold'),
     supabase.from('market_state').select('*').eq('id', 1).single(),
