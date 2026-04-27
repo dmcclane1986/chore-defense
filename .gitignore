@@ -25,6 +25,7 @@
 *.pem
 *.tar
 docker-compose.yml
+tmp/
 
 # debug
 npm-debug.log*

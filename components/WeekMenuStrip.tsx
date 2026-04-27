@@ -279,6 +279,36 @@ function extractDays(menu: unknown): Record<string, unknown>[] {
   return []
 }
 
+function ymdInTz(tz: string, d: Date): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(d)
+
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
+  const y = get('year')
+  const m = get('month')
+  const day = get('day')
+  return `${y}-${m}-${day}`
+}
+
+function mondayYmdForNowInTz(tz: string): string {
+  // Build a stable UTC date for "today" in tz (noon avoids DST edge cases).
+  const now = new Date()
+  const todayYmd = ymdInTz(tz, now)
+  const [yy, mm, dd] = todayYmd.split('-').map((v) => parseInt(v, 10))
+  const pseudo = new Date(Date.UTC(yy, (mm ?? 1) - 1, dd ?? 1, 12, 0, 0))
+  const weekday = pseudo.getUTCDay() // 0=Sun..6=Sat for that calendar day
+  const mondayIndex = (weekday + 6) % 7
+  pseudo.setUTCDate(pseudo.getUTCDate() - mondayIndex)
+  const y = pseudo.getUTCFullYear()
+  const m = String(pseudo.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(pseudo.getUTCDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 /** Voteable rows from meals / items / recipes / slots (each row must have an id). */
 function rowsFromMealsArray(day: Record<string, unknown>): VoteableLine[] {
   const arr = day.meals ?? day.items ?? day.recipes ?? day.slots
@@ -652,7 +682,13 @@ export function WeekMenuStrip({ initialMenu, initialFetchFailed, timezone }: Pro
   const refresh = useCallback(async () => {
     setRefreshing(true)
     try {
-      const res = await fetch('/api/menu', { cache: 'no-store' })
+      // Always request the menu for the war-timezone "current week".
+      // This keeps the visible week stable until war-timezone midnight.
+      const weekStart = mondayYmdForNowInTz(timezone)
+      const res = await fetch(
+        `/api/menu?weekStart=${encodeURIComponent(weekStart)}`,
+        { cache: 'no-store' },
+      )
       if (res.status === 503) {
         setMenu(null)
         setFetchFailed(false)
@@ -664,14 +700,14 @@ export function WeekMenuStrip({ initialMenu, initialFetchFailed, timezone }: Pro
         return
       }
       setFetchFailed(false)
-      setMenu(await res.json())
+      setMenu((await res.json()) as unknown)
     } catch {
       setMenu(null)
       setFetchFailed(true)
     } finally {
       setRefreshing(false)
     }
-  }, [])
+  }, [timezone])
 
   const submitVote = useCallback(
     async (menuItemId: string, vote: 'up' | 'down') => {

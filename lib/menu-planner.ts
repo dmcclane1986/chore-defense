@@ -6,9 +6,14 @@ function trimEnv(v: string | undefined): string | undefined {
   return t || undefined
 }
 
-function weekMenuUrl(baseUrl: string, householdId: string): string {
+function weekMenuUrl(baseUrl: string, householdId: string, weekStart?: string): string {
   const base = baseUrl.replace(/\/$/, '')
   const q = new URLSearchParams({ householdId })
+  if (weekStart && weekStart.trim()) {
+    const ws = weekStart.trim()
+    // menu-planner-web expects `week=YYYY-MM-DD` (used as an anchor date).
+    q.set('week', ws)
+  }
   return `${base}${WEEK_MENU_PATH}?${q.toString()}`
 }
 
@@ -17,7 +22,7 @@ export type WeekMenuFetchResult =
   | { configured: true; ok: true; data: unknown }
   | { configured: true; ok: false; status: number; body: unknown }
 
-async function fetchUpstreamWeekMenu(): Promise<WeekMenuFetchResult> {
+async function fetchUpstreamWeekMenu(weekStart?: string): Promise<WeekMenuFetchResult> {
   const baseUrl = trimEnv(process.env.MENU_PLANNER_URL)
   const apiKey = trimEnv(process.env.MENU_PLANNER_API_KEY)
   const householdId = trimEnv(process.env.MENU_PLANNER_HOUSEHOLD_ID)
@@ -25,7 +30,7 @@ async function fetchUpstreamWeekMenu(): Promise<WeekMenuFetchResult> {
     return { configured: false }
   }
 
-  const url = weekMenuUrl(baseUrl, householdId)
+  const url = weekMenuUrl(baseUrl, householdId, weekStart)
   let res: Response
   try {
     res = await fetch(url, {
@@ -141,5 +146,19 @@ export async function getWeekMenuForPage(): Promise<{
   if (r.ok) {
     return { menu: r.data, menuFetchFailed: false }
   }
+  return { menu: null, menuFetchFailed: true }
+}
+
+export async function getWeekMenuForApiWeekStart(weekStart: string): Promise<WeekMenuFetchResult> {
+  return fetchUpstreamWeekMenu(weekStart)
+}
+
+export async function getWeekMenuForPageWeekStart(weekStart: string): Promise<{
+  menu: unknown | null
+  menuFetchFailed: boolean
+}> {
+  const r = await fetchUpstreamWeekMenu(weekStart)
+  if (!r.configured) return { menu: null, menuFetchFailed: false }
+  if (r.ok) return { menu: r.data, menuFetchFailed: false }
   return { menu: null, menuFetchFailed: true }
 }
