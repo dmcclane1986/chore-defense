@@ -4,10 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getDay, parseISO } from 'date-fns'
 import { useCurrentUser } from '@/contexts/UserContext'
 import { menuPlannerFamilyMemberIdForUser } from '@/lib/menu-planner-member-map'
+import { nextMidnightInTz } from '@/lib/timezone'
+import { useCountdown } from './MarketBanner'
 
 type Props = {
   initialMenu: unknown | null
   initialFetchFailed: boolean
+  timezone: string
 }
 
 type VoteableLine = {
@@ -616,7 +619,7 @@ function saveVotedItems(memberId: string, items: Set<string>): void {
   }
 }
 
-export function WeekMenuStrip({ initialMenu, initialFetchFailed }: Props) {
+export function WeekMenuStrip({ initialMenu, initialFetchFailed, timezone }: Props) {
   const { currentUser } = useCurrentUser()
   const [menu, setMenu] = useState<unknown | null>(initialMenu)
   const [fetchFailed, setFetchFailed] = useState(initialFetchFailed)
@@ -722,6 +725,28 @@ export function WeekMenuStrip({ initialMenu, initialFetchFailed }: Props) {
     return () => clearInterval(id)
   }, [refresh])
 
+  // Also refresh right after "daily reset" so menu aligns with other daily systems.
+  useEffect(() => {
+    const targetMs = nextMidnightInTz(timezone)
+    const delay = Math.max(1_000, targetMs - Date.now() + 2_000)
+    const id = setTimeout(() => {
+      refresh()
+    }, delay)
+    return () => clearTimeout(id)
+  }, [timezone, refresh])
+
+  function useMidnightRefreshCountdown(timezone: string): string {
+    const getTarget = () => new Date(nextMidnightInTz(timezone)).toISOString()
+    const [target, setTarget] = useState(getTarget)
+    useEffect(() => {
+      setTarget(getTarget())
+      const id = setInterval(() => setTarget(getTarget()), 60_000)
+      return () => clearInterval(id)
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [timezone])
+    return useCountdown(target)
+  }
+
   const days = extractDays(menu)
   const weekColumns = useMemo(() => buildWeekColumns(days), [days])
 
@@ -733,12 +758,18 @@ export function WeekMenuStrip({ initialMenu, initialFetchFailed }: Props) {
     (c) => c.plain.split || c.plain.single || c.voteRows.length > 0,
   )
   const hasVoteableRows = weekColumns.some((c) => c.voteRows.length > 0)
+  const refreshCountdown = useMidnightRefreshCountdown(timezone)
 
   return (
     <div className="w-full border-t border-stone-800 bg-stone-900/55 px-2 py-2 shrink-0">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 px-1">
         <div className="flex items-center gap-2">
-          <span className="text-emerald-500/90 text-sm font-medieval tracking-wider">🍲 Week menu</span>
+          <span className="text-emerald-500/90 text-sm font-medieval tracking-wider">
+            🍲 Week menu
+          </span>
+          <span className="text-[10px] text-stone-500 ml-1">
+            🔄 updates in <span className="font-mono font-bold text-stone-400">{refreshCountdown}</span>
+          </span>
           <button
             type="button"
             onClick={refresh}
