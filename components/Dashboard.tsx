@@ -328,7 +328,11 @@ export function Dashboard({
         <div className="h-[72px] min-h-[72px] shrink-0 w-full min-w-0">
           <CalendarStrip initialEvents={calendarEvents} />
         </div>
-        <WeekMenuStrip initialMenu={weekMenu} initialFetchFailed={weekMenuFetchFailed} />
+        <WeekMenuStrip
+          initialMenu={weekMenu}
+          initialFetchFailed={weekMenuFetchFailed}
+          timezone={timezone}
+        />
       </footer>
     </div>
   )
